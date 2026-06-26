@@ -1,0 +1,110 @@
+#!/bin/sh
+# status-hud — press Mod+grave to show system status via mako
+# 1-second sample for CPU + network speed, then fires the notification
+
+bh() {
+    b=${1:-0}
+    if   [ "$b" -ge 1048576 ]; then printf '%dM' "$(( b/1048576 ))"
+    elif [ "$b" -ge 1024 ];    then printf '%dK' "$(( b/1024 ))"
+    else printf '%dB' "$b"; fi
+}
+
+# ── Active network interface (prefer wireless) ────────────────────────────────
+NET_IF=""
+for _i in $(ls /sys/class/net/ 2>/dev/null); do
+    [ "$_i" = "lo" ] && continue
+    [ "$(cat /sys/class/net/$_i/operstate 2>/dev/null)" = "up" ] || continue
+    NET_IF="$_i"
+    [ -d "/sys/class/net/$_i/wireless" ] && break
+done
+
+# ── Snapshot 1 — network bytes + CPU stat ────────────────────────────────────
+RX1=$(cat "/sys/class/net/${NET_IF:-lo}/statistics/rx_bytes" 2>/dev/null || echo 0)
+TX1=$(cat "/sys/class/net/${NET_IF:-lo}/statistics/tx_bytes" 2>/dev/null || echo 0)
+CPU1=$(awk '/^cpu /{t=$2+$3+$4+$5+$6+$7+$8; i=$5+$6; print t, i; exit}' /proc/stat)
+
+sleep 1
+
+# ── Snapshot 2 ───────────────────────────────────────────────────────────────
+RX2=$(cat "/sys/class/net/${NET_IF:-lo}/statistics/rx_bytes" 2>/dev/null || echo 0)
+TX2=$(cat "/sys/class/net/${NET_IF:-lo}/statistics/tx_bytes" 2>/dev/null || echo 0)
+CPU2=$(awk '/^cpu /{t=$2+$3+$4+$5+$6+$7+$8; i=$5+$6; print t, i; exit}' /proc/stat)
+
+# ── CPU usage (delta) ────────────────────────────────────────────────────────
+CT1=$(printf '%s' "$CPU1" | awk '{print $1}')
+CI1=$(printf '%s' "$CPU1" | awk '{print $2}')
+CT2=$(printf '%s' "$CPU2" | awk '{print $1}')
+CI2=$(printf '%s' "$CPU2" | awk '{print $2}')
+_dt=$(( CT2 - CT1 )); _di=$(( CI2 - CI1 ))
+[ "$_dt" -gt 0 ] && CPU=$(( 100*(_dt-_di)/_dt )) || CPU=0
+
+# ── Network speed + label ────────────────────────────────────────────────────
+DRX=$(bh $(( RX2 - RX1 )))
+DTX=$(bh $(( TX2 - TX1 )))
+if [ -d "/sys/class/net/${NET_IF:-lo}/wireless" ]; then
+    SSID=$(iw dev "$NET_IF" link 2>/dev/null | awk -F': ' '/SSID/{print $2; exit}')
+    NET_LABEL="${SSID:-wifi}"
+else
+    NET_LABEL="${NET_IF:-no net}"
+fi
+
+# ── GPU — Intel UHD 620 frequency proxy ─────────────────────────────────────
+GPU="-"
+_gbsy="/sys/class/drm/card0/device/gpu_busy_percent"
+_gcur="/sys/class/drm/card0/gt/gt0/cur_freq_mhz"
+_gmax="/sys/class/drm/card0/gt/gt0/max_freq_mhz"
+if [ -f "$_gbsy" ]; then
+    GPU="$(cat "$_gbsy")%"
+elif [ -f "$_gcur" ] && [ -f "$_gmax" ]; then
+    _c=$(cat "$_gcur"); _m=$(cat "$_gmax")
+    [ "$_m" -gt 0 ] && GPU="~$(( _c*100/_m ))%" || GPU="-"
+fi
+
+# ── Memory ───────────────────────────────────────────────────────────────────
+RAM=$(awk '/MemTotal/{t=$2}/MemAvailable/{a=$2}
+    END{printf "%.1fG", (t-a)/1048576}' /proc/meminfo)
+
+# ── Disk ─────────────────────────────────────────────────────────────────────
+DISK=$(df -h / 2>/dev/null | awk 'NR==2{printf "%s/%s", $3, $2}')
+
+# ── Battery ──────────────────────────────────────────────────────────────────
+_bdir=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -1)
+if [ -n "$_bdir" ]; then
+    _cap=$(cat "$_bdir/capacity" 2>/dev/null)
+    _st=$( cat "$_bdir/status"   2>/dev/null)
+    case "$_st" in
+        Charging)    _bi="↑ " ;;
+        Discharging) _bi="↓ " ;;
+        Full)        _bi="  " ;;
+        *)           _bi=""   ;;
+    esac
+    BAT="${_bi}${_cap}%"
+else
+    BAT="N/A"
+fi
+
+# ── Volume ───────────────────────────────────────────────────────────────────
+_vraw=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null)
+printf '%s' "$_vraw" | grep -q MUTED \
+    && VOL="MUTE" \
+    || VOL=$(printf '%s' "$_vraw" | awk '{printf "%d%%", $2*100}')
+
+# ── Compose body ─────────────────────────────────────────────────────────────
+NOW=$(date '+%H:%M  %a %d %b')
+
+BODY=$(printf ' %s   ↓ %s/s   ↑ %s/s\n\n CPU %s%%   GPU %s\n RAM %s     DSK %s\n\n BAT %s     VOL %s\n\n  %s' \
+    "$NET_LABEL" "$DRX" "$DTX" \
+    "$CPU"       "$GPU" \
+    "$RAM"       "$DISK" \
+    "$BAT"       "$VOL" \
+    "$NOW")
+
+# ── Send notification ─────────────────────────────────────────────────────────
+# app-name "status-hud" triggers the mako criteria block (no title, body-only)
+# expire-time=8000ms — auto-dismisses after 8 seconds
+notify-send \
+    --app-name  "status-hud" \
+    --urgency   low \
+    --expire-time 8000 \
+    "status" \
+    "$BODY"
