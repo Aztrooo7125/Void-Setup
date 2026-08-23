@@ -10,13 +10,3 @@ padding=10
 margin=8
 icons=0
 format=<b>%s</b>\n%b
-
-# Status HUD criteria — triggered by status-hud script (Mod+grave)
-# No title, just body, no auto-dismiss (notify-send controls timeout)
-[app-name="status-hud"]
-background-color=#1a1e24f4
-border-color=#6e9dbfff
-border-size=1
-border-radius=6
-default-timeout=0
-format=%b

@@ -17,7 +17,7 @@ xr() {
 set -e
 [ "$(id -u)" -eq 0 ] && echo "Run as regular user, not root." && exit 1
 VOID_USER=$(id -un)
-echo "Void Linux v3 setup — user: $VOID_USER"
+echo "Void Linux 4.0 setup — user: $VOID_USER"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -154,7 +154,8 @@ xi -Sy \
     kanshi \
     lxsession mesa-dri xwayland-satellite\
     xdg-desktop-portal xdg-desktop-portal-wlr \
-    xdg-user-dirs xdg-utils
+    xdg-user-dirs xdg-utils \
+    gnome-themes-extra dconf
 
 xdg-user-dirs-update
 mkdir -p ~/.startup_assets ~/Pictures
@@ -179,31 +180,75 @@ sudo ln -sf /etc/sv/wireplumber /var/service/
 # ─────────────────────────────────────────────────────────────────────────────
 
 xi -Sy \
+    libreoffice \
     firefox \
-    mpv imv \
+    mpv imv spotify_player lmms\
     btop \
     yt-dlp \
-    nano wget curl psmisc \
-    yazi ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg ImageMagick glow \
+    nano wget curl psmisc rsync\
+    Thunar yazi ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg ImageMagick glow \
 
 curl -f https://zed.dev/install.sh | sh
 curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
-flatpak install flathub md.obsidian.Obsidian
+flatpak install -y flathub md.obsidian.Obsidian
+flatpak install -y foliate
+flatpak install -y flathub org.audacityteam.Audacity
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# (X.)  FONTS
+# (X.) COMPLETE FONT SUITE (System, CJK, Symbols, Microsoft & Apple)
 # ─────────────────────────────────────────────────────────────────────────────
 
-xi -Sy noto-fonts-ttf noto-fonts-ttf-extra noto-fonts-emoji
+# 1. Official Void Linux Packages (Noto, CJK, Emoji, Icons, Standards)
+xi -Sy \
+    noto-fonts-ttf \
+    noto-fonts-ttf-extra \
+    noto-fonts-cjk \
+    noto-fonts-emoji \
+    dejavu-fonts-ttf \
+    liberation-fonts-ttf \
+    font-awesome \
+    nerd-fonts-symbols-ttf \
+    font-adobe-source-code-pro-ttf \
+    font-adobe-source-sans-pro-ttf \
+    font-adobe-source-serif-pro-ttf \
+    cantarell-fonts \
+    cabextract curl unzip
 
-mkdir -p ~/.local/share/fonts/JetBrainsMono
+# Create organized font directories
+FONT_DIR="$HOME/.local/share/fonts"
+mkdir -p "$FONT_DIR"/{JetBrainsMono,NerdSymbols,Microsoft,Apple}
+
+# 2. JetBrains Mono + Symbols Only Nerd Font (Complete Icon Fallback)
+echo "--> Installing JetBrains Mono & Symbols Nerd Font..."
 wget -q --show-progress -O /tmp/JBM.zip \
     "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
-unzip -o /tmp/JBM.zip -d ~/.local/share/fonts/JetBrainsMono '*.ttf'
-rm /tmp/JBM.zip
-fc-cache -fv
+unzip -o /tmp/JBM.zip -d "$FONT_DIR/JetBrainsMono" '*.ttf'
+rm -f /tmp/JBM.zip
 
+wget -q --show-progress -O /tmp/NerdSymbols.zip \
+    "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/NerdFontsSymbolsOnly.zip"
+unzip -o /tmp/NerdSymbols.zip -d "$FONT_DIR/NerdSymbols" '*.ttf'
+rm -f /tmp/NerdSymbols.zip
+
+# 3. Microsoft Fonts (Core Web Fonts + ClearType + Segoe UI)
+echo "--> Installing Microsoft Fonts (Calibri, Segoe UI, Arial, Times, etc.)..."
+wget -q --show-progress -O /tmp/ms-fonts.zip \
+    "https://github.com/pjobson/Microsoft-Fonts/archive/refs/heads/master.zip"
+unzip -o -j /tmp/ms-fonts.zip "*.ttf" "*.TTF" "*.otf" "*.OTF" -d "$FONT_DIR/Microsoft"
+rm -f /tmp/ms-fonts.zip
+
+# 4. Apple Fonts (San Francisco Pro/Mono/Compact & New York)
+echo "--> Installing Apple Typography Suite (SF Pro, SF Mono, New York)..."
+wget -q --show-progress -O /tmp/apple-fonts.zip \
+    "https://github.com/dpejoh/apple-typography-for-linux/archive/refs/heads/main.zip"
+unzip -o -j /tmp/apple-fonts.zip "*.ttf" "*.otf" -d "$FONT_DIR/Apple"
+rm -f /tmp/apple-fonts.zip
+
+# 5. Rebuild Font Cache
+echo "--> Rebuilding Font Cache..."
+fc-cache -fv
 
 # ─────────────────────────────────────────────────────────────────────────────
 # (XI.)  DEV TOOLS + VA-API                                        ← [UHD620]
@@ -213,12 +258,14 @@ fc-cache -fv
 #  Firefox: set media.ffmpeg.vaapi.enabled=true in about:config
 
 xi -Sy \
+    speedtest-cli \
     git github-cli base-devel \
     python3 python3-pip \
     nodejs \
     pkg-config \
     libva libva-utils intel-media-driver libva-intel-driver mesa-vulkan-intel vulkan-loader \
-    docker docker-compose
+    docker docker-compose \
+    opencode
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -341,22 +388,14 @@ git clone --depth=1 https://github.com/romkatv/powerlevel10k.git \
 
 cp -r .config ~/.config
 cp -r .startup_assets ~
-cp .misc/.zshrc ~
+cp .misc/* ~
 xr -OOo && sudo vkpurge rm all
 
 
 printf '\n\e[1;32m────────────────────────────────────────────────────\e[0m\n'
 printf '\e[1;32m  Setup complete.\e[0m\n'
 printf '\e[1;32m────────────────────────────────────────────────────\e[0m\n\n'
-printf '  1. cp niri_config.kdl ~/.config/niri/config.kdl\n'
-printf '     Update wallpaper path inside before first boot\n\n'
-printf '  2. Edit ~/.zshrc: ZSH_THEME + plugins\n\n'
-printf '  3. Reboot\n\n'
 printf '  Boot: POST → (Shift for Windows) → tty1 → Password: → niri\n\n'
-printf '  In niri:\n'
-printf '    Mod+grave     = system status HUD (8-second notification)\n'
-printf '    Mod+F2        = switch to plain tty2\n'
-printf '    Ctrl+Alt+F1   = return to niri\n\n'
 echo
 read -p "Setup Process Complete.
 Press any key to reboot system"
