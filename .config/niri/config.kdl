@@ -270,7 +270,9 @@ layout {
 // ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 
 // AUTOSTART APPLICATIONS
-spawn-at-startup "dbus-update-activation-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP=Niri" "mako"
+spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP"
+spawn-at-startup "mako"
+spawn-at-startup "udiskie" "--smart-tray"
 
 // AUTOSTART SHELL COMMANDS
 spawn-sh-at-startup "swaybg -i ~/.startup_assets/in_use.png -m fill"
