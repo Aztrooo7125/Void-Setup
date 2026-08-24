@@ -106,8 +106,8 @@ source $ZSH/oh-my-zsh.sh
 # - $ZSH_CUSTOM/macos.zsh
 # For a full list of active aliases, run `alias`.
 
-alias xi="sudo xbps-install"
-alias xr="sudo xbps-remove"
+alias xbi="sudo xbps-install"
+alias xbr="sudo xbps-remove"
 export PATH=$HOME/.local/bin:$PATH
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
