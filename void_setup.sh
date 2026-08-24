@@ -70,7 +70,6 @@ GRUB_DEFAULT=0
 GRUB_DISABLE_RECOVERY=true
 EOF
 
-sudo chmod +x /etc/grub.d/31_hold_shift
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 
