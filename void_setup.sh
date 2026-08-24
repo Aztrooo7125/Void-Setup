@@ -210,57 +210,6 @@ dl() {
     fi
 }
 
-# 2. Adobe Source Fonts (Source Code Pro, Source Sans, Source Serif)
-echo "--> Installing Adobe Source Suite..."
-dl "https://github.com/adobe-fonts/source-code-pro/archive/refs/heads/release.zip" /tmp/source-code-pro.zip \
-    && unzip -o -j /tmp/source-code-pro.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
-dl "https://github.com/adobe-fonts/source-sans/archive/refs/heads/release.zip" /tmp/source-sans.zip \
-    && unzip -o -j /tmp/source-sans.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
-dl "https://github.com/adobe-fonts/source-serif/archive/refs/heads/release.zip" /tmp/source-serif.zip \
-    && unzip -o -j /tmp/source-serif.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
-rm -f /tmp/source-code-pro.zip /tmp/source-sans.zip /tmp/source-serif.zip
-
-# 3. JetBrains Mono + Symbols Only Nerd Font (icon fallback)
-echo "--> Installing JetBrains Mono & Symbols Nerd Font..."
-dl "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip" /tmp/JBM.zip \
-    && unzip -o /tmp/JBM.zip -d "$FONT_DIR/JetBrainsMono" '*.ttf'
-dl "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/NerdFontsSymbolsOnly.zip" /tmp/NerdSymbols.zip \
-    && unzip -o /tmp/NerdSymbols.zip -d "$FONT_DIR/NerdSymbols" '*.ttf'
-rm -f /tmp/JBM.zip /tmp/NerdSymbols.zip
-# NOTE: nerd-fonts-symbols-ttf above (from xbps) already covers the same
-# symbols-only fallback — the manual download here is only useful if you
-# specifically want the newest upstream release ahead of what's packaged.
-# Drop this block if you'd rather rely solely on the xbps package.
-
-# 4. Microsoft-compatible fonts: official redistributable "core fonts"
-#    + Carlito/Caladea metric-compatible clones of Calibri/Cambria
-echo "--> Installing Microsoft TrueType core fonts (Arial, Times, Courier, etc.)..."
-CORE_BASE="https://downloads.sourceforge.net/project/corefonts/the%20fonts/final"
-for f in andale32 arial32 arialb32 comic32 courie32 georgi32 impact32 times32 trebuc32 verdan32 webdin32; do
-    if dl "$CORE_BASE/${f}.exe" "/tmp/${f}.exe"; then
-        cabextract -q -L -d "$FONT_DIR/MSCoreFonts" "/tmp/${f}.exe"
-        rm -f "/tmp/${f}.exe"
-    fi
-done
-
-echo "--> Installing Carlito/Caladea (Calibri/Cambria metric-compatible, OFL)..."
-for f in Carlito-Regular Carlito-Bold Carlito-Italic Carlito-BoldItalic; do
-    dl "https://raw.githubusercontent.com/google/fonts/main/ofl/carlito/${f}.ttf" "$FONT_DIR/MetricCompatible/${f}.ttf"
-done
-for f in Caladea-Regular Caladea-Bold; do
-    dl "https://raw.githubusercontent.com/google/fonts/main/ofl/caladea/${f}.ttf" "$FONT_DIR/MetricCompatible/${f}.ttf"
-done
-
-# 5. Inter — open-source, near-identical to Apple's San Francisco / SF Pro
-#    (true SF Pro/SF Mono/New York require Apple's developer site and are
-#    license-restricted to Apple-platform app design, not general desktop use)
-echo "--> Installing Inter (SF Pro-style UI font)..."
-dl "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip" /tmp/inter.zip \
-    && unzip -o -j /tmp/inter.zip "*.ttf" -d "$FONT_DIR/Inter"
-rm -f /tmp/inter.zip
-# Check for a newer release at https://github.com/rsms/inter/releases if you want the latest.
-
-# 6. Rebuild Font Cache
 echo "--> Rebuilding Font Cache..."
 fc-cache -fv
 
