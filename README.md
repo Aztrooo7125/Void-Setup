@@ -14,7 +14,7 @@ It uses niri and has only a screen without waybar/status bar, status depends on 
 1. Generate SSH key using **ssh-keygen** to then link to your Github profile: **ssh-keygen -t ed25519 -C "your_email@example.com"**
 1. Go to your generated SSH key folder then copy the **id_ed25519.pub** to your GitHub profile, or alternatively an easier way is to run **cat id_ed25519.pub > index.html; python3 -m http.server 8000; rm index.html**
 
-####NOTE: USE A PRIVATE NETWORK AS PEOPLE COULD EASILY GET YOUR SSH KEY WHILE THE SERVER RUNS!
+#### NOTE: USE A PRIVATE NETWORK AS PEOPLE COULD EASILY GET YOUR SSH KEY WHILE THE SERVER RUNS!
 
 7. Run **git clone https://github.com/Aztrooo7125/Void-Setup.git**
 
