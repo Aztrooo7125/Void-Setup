@@ -62,36 +62,14 @@ sudo xbps-reconfigure -f "linux${KVER}"
 # (III.)  GRUB — ZERO TIMEOUT + SHIFT → WINDOWS             ← [Kaby Lake-R]
 # ─────────────────────────────────────────────────────────────────────────────
 
-xi -Sy os-prober
-
 sudo tee /etc/default/grub << 'EOF'
 GRUB_TIMEOUT=0
 GRUB_TIMEOUT_STYLE=hidden
 GRUB_DISTRIBUTOR="Void Linux"
 GRUB_DEFAULT=0
-GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3 nowatchdog intel_pstate=active"
 GRUB_DISABLE_RECOVERY=true
-GRUB_DISABLE_OS_PROBER=false
-GRUB_PRELOAD_MODULES="part_gpt part_msdos keystatus"
 EOF
 
-sudo tee /etc/grub.d/31_hold_shift << 'GRUBEOF'
-#!/bin/sh
-set -e
-cat << 'EOF'
-if keystatus; then
-  if keystatus --shift; then
-    set timeout=-1
-  else
-    set timeout=0
-  fi
-else
-  if sleep --interruptible 3; then
-    set timeout=0
-  fi
-fi
-EOF
-GRUBEOF
 sudo chmod +x /etc/grub.d/31_hold_shift
 sudo grub-mkconfig -o /boot/grub/grub.cfg
 
@@ -196,13 +174,15 @@ curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
 sudo flatpak install -y flathub md.obsidian.Obsidian com.github.johnfactotum.Foliate org.audacityteam.Audacity com.spotify.Client
 
 
+#!/bin/sh
 # ─────────────────────────────────────────────────────────────────────────────
-# (X.) COMPLETE FONT SUITE (System, CJK, Symbols, Adobe, Microsoft & Apple)
+# (X.) COMPLETE FONT SUITE (System, CJK, Symbols, Adobe, MS-compatible, Inter)
 # ─────────────────────────────────────────────────────────────────────────────
 
 xi -Syu
+xi -Syu
 
-# 1. Official Void Linux Packages (Noto, CJK, Emoji, Icons, Standards)
+# 1. Official Void Linux packages (Noto, CJK, Emoji, Icons, Standards)
 xi -Sy \
     noto-fonts-ttf \
     noto-fonts-ttf-extra \
@@ -213,59 +193,76 @@ xi -Sy \
     font-awesome \
     nerd-fonts-symbols-ttf \
     cantarell-fonts \
-    cabextract curl unzip
+    cabextract
 
-# Create organized font directories
+# Organized font directories
 FONT_DIR="$HOME/.local/share/fonts"
-mkdir -p "$FONT_DIR"/{JetBrainsMono,NerdSymbols,Adobe,Microsoft,Apple}
+mkdir -p "$FONT_DIR"/{JetBrainsMono,NerdSymbols,Adobe,MSCoreFonts,MetricCompatible,Inter}
 
-# 2. Adobe Source Fonts (Manual Installation via Official Repos)
-echo "--> Installing Adobe Source Suite (Source Code Pro, Source Sans, Source Serif)..."
-wget -q --show-progress -O /tmp/source-code-pro.zip \
-    "https://github.com/adobe-fonts/source-code-pro/archive/refs/heads/release.zip"
-unzip -o -j /tmp/source-code-pro.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
-rm -f /tmp/source-code-pro.zip
+# Small helper: download with retries, report failure instead of failing silently
+dl() {
+    # $1 = url  $2 = output path
+    if curl -fL --retry 3 --retry-delay 2 --show-error -o "$2" "$1"; then
+        return 0
+    else
+        echo "    !! FAILED to download: $1" >&2
+        return 1
+    fi
+}
 
-wget -q --show-progress -O /tmp/source-sans.zip \
-    "https://github.com/adobe-fonts/source-sans/archive/refs/heads/release.zip"
-unzip -o -j /tmp/source-sans.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
-rm -f /tmp/source-sans.zip
+# 2. Adobe Source Fonts (Source Code Pro, Source Sans, Source Serif)
+echo "--> Installing Adobe Source Suite..."
+dl "https://github.com/adobe-fonts/source-code-pro/archive/refs/heads/release.zip" /tmp/source-code-pro.zip \
+    && unzip -o -j /tmp/source-code-pro.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
+dl "https://github.com/adobe-fonts/source-sans/archive/refs/heads/release.zip" /tmp/source-sans.zip \
+    && unzip -o -j /tmp/source-sans.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
+dl "https://github.com/adobe-fonts/source-serif/archive/refs/heads/release.zip" /tmp/source-serif.zip \
+    && unzip -o -j /tmp/source-serif.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
+rm -f /tmp/source-code-pro.zip /tmp/source-sans.zip /tmp/source-serif.zip
 
-wget -q --show-progress -O /tmp/source-serif.zip \
-    "https://github.com/adobe-fonts/source-serif/archive/refs/heads/release.zip"
-unzip -o -j /tmp/source-serif.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
-rm -f /tmp/source-serif.zip
-
-# 3. JetBrains Mono + Symbols Only Nerd Font (Complete Icon Fallback)
+# 3. JetBrains Mono + Symbols Only Nerd Font (icon fallback)
 echo "--> Installing JetBrains Mono & Symbols Nerd Font..."
-wget -q --show-progress -O /tmp/JBM.zip \
-    "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
-unzip -o /tmp/JBM.zip -d "$FONT_DIR/JetBrainsMono" '*.ttf'
-rm -f /tmp/JBM.zip
+dl "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip" /tmp/JBM.zip \
+    && unzip -o /tmp/JBM.zip -d "$FONT_DIR/JetBrainsMono" '*.ttf'
+dl "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/NerdFontsSymbolsOnly.zip" /tmp/NerdSymbols.zip \
+    && unzip -o /tmp/NerdSymbols.zip -d "$FONT_DIR/NerdSymbols" '*.ttf'
+rm -f /tmp/JBM.zip /tmp/NerdSymbols.zip
+# NOTE: nerd-fonts-symbols-ttf above (from xbps) already covers the same
+# symbols-only fallback — the manual download here is only useful if you
+# specifically want the newest upstream release ahead of what's packaged.
+# Drop this block if you'd rather rely solely on the xbps package.
 
-wget -q --show-progress -O /tmp/NerdSymbols.zip \
-    "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/NerdFontsSymbolsOnly.zip"
-unzip -o /tmp/NerdSymbols.zip -d "$FONT_DIR/NerdSymbols" '*.ttf'
-rm -f /tmp/NerdSymbols.zip
+# 4. Microsoft-compatible fonts: official redistributable "core fonts"
+#    + Carlito/Caladea metric-compatible clones of Calibri/Cambria
+echo "--> Installing Microsoft TrueType core fonts (Arial, Times, Courier, etc.)..."
+CORE_BASE="https://downloads.sourceforge.net/project/corefonts/the%20fonts/final"
+for f in andale32 arial32 arialb32 comic32 courie32 georgi32 impact32 times32 trebuc32 verdan32 webdin32; do
+    if dl "$CORE_BASE/${f}.exe" "/tmp/${f}.exe"; then
+        cabextract -q -L -d "$FONT_DIR/MSCoreFonts" "/tmp/${f}.exe"
+        rm -f "/tmp/${f}.exe"
+    fi
+done
 
-# 4. Microsoft Fonts (Core Web Fonts + ClearType + Segoe UI)
-echo "--> Installing Microsoft Fonts (Calibri, Segoe UI, Arial, Times, etc.)..."
-wget -q --show-progress -O /tmp/ms-fonts.zip \
-    "https://github.com/pjobson/Microsoft-Fonts/archive/refs/heads/master.zip"
-unzip -o -j /tmp/ms-fonts.zip "*.ttf" "*.TTF" "*.otf" "*.OTF" -d "$FONT_DIR/Microsoft"
-rm -f /tmp/ms-fonts.zip
+echo "--> Installing Carlito/Caladea (Calibri/Cambria metric-compatible, OFL)..."
+for f in Carlito-Regular Carlito-Bold Carlito-Italic Carlito-BoldItalic; do
+    dl "https://raw.githubusercontent.com/google/fonts/main/ofl/carlito/${f}.ttf" "$FONT_DIR/MetricCompatible/${f}.ttf"
+done
+for f in Caladea-Regular Caladea-Bold; do
+    dl "https://raw.githubusercontent.com/google/fonts/main/ofl/caladea/${f}.ttf" "$FONT_DIR/MetricCompatible/${f}.ttf"
+done
 
-# 5. Apple Fonts (San Francisco Pro/Mono/Compact & New York)
-echo "--> Installing Apple Typography Suite (SF Pro, SF Mono, New York)..."
-wget -q --show-progress -O /tmp/apple-fonts.zip \
-    "https://github.com/dpejoh/apple-typography-for-linux/archive/refs/heads/main.zip"
-unzip -o -j /tmp/apple-fonts.zip "*.ttf" "*.otf" -d "$FONT_DIR/Apple"
-rm -f /tmp/apple-fonts.zip
+# 5. Inter — open-source, near-identical to Apple's San Francisco / SF Pro
+#    (true SF Pro/SF Mono/New York require Apple's developer site and are
+#    license-restricted to Apple-platform app design, not general desktop use)
+echo "--> Installing Inter (SF Pro-style UI font)..."
+dl "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip" /tmp/inter.zip \
+    && unzip -o -j /tmp/inter.zip "*.ttf" -d "$FONT_DIR/Inter"
+rm -f /tmp/inter.zip
+# Check for a newer release at https://github.com/rsms/inter/releases if you want the latest.
 
 # 6. Rebuild Font Cache
 echo "--> Rebuilding Font Cache..."
 fc-cache -fv
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # (XI.)  DEV TOOLS + VA-API                                        ← [UHD620]
