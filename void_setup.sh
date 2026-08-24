@@ -155,7 +155,8 @@ xi -Sy \
     lxsession mesa-dri xwayland-satellite\
     xdg-desktop-portal xdg-desktop-portal-wlr \
     xdg-user-dirs xdg-utils \
-    gnome-themes-extra dconf
+    gnome-themes-extra dconf \
+    udiskie
 
 xdg-user-dirs-update
 mkdir -p ~/.startup_assets ~/Pictures
