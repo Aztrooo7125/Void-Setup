@@ -115,7 +115,7 @@ sleep 10; sudo sv up NetworkManager 2>/dev/null || true
 xi -Sy chrony
 sudo ln -sf /etc/sv/chronyd /var/service/
 
-xr -RF pulseaudio
+xr -RF pulseaudio || true
 
 
 # ─────────────────────────────────────────────────────────────────────────────
