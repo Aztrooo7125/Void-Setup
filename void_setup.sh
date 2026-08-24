@@ -26,8 +26,14 @@ echo "Void Linux Setup — User: $VOID_USER"
 
 xi -Sy void-repo-nonfree void-repo-multilib void-repo-multilib-nonfree
 xi -Syu
+
+xi -fy dbus
+sudo rm -f /var/service/dbus
+sudo ln -sf /etc/sv/dbus /var/service/
+sudo sv up dbus
+
 xi -Sy flatpak
-flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -190,7 +196,7 @@ xi -Sy \
     Thunar yazi ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg ImageMagick glow \
 
 curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
-flatpak install -y flathub md.obsidian.Obsidian com.github.johnfactotum.Foliate org.audacityteam.Audacity com.spotify.Client
+sudo flatpak install -y flathub md.obsidian.Obsidian com.github.johnfactotum.Foliate org.audacityteam.Audacity com.spotify.Client
 
 
 # ─────────────────────────────────────────────────────────────────────────────
