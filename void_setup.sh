@@ -17,7 +17,7 @@ xr() {
 set -e
 [ "$(id -u)" -eq 0 ] && echo "Run as regular user, not root." && exit 1
 VOID_USER=$(id -un)
-echo "Void Linux 4.0 setup — user: $VOID_USER"
+echo "Void Linux Setup — User: $VOID_USER"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -182,18 +182,14 @@ sudo ln -sf /etc/sv/wireplumber /var/service/
 xi -Sy \
     libreoffice \
     firefox \
-    mpv imv spotify_player lmms\
+    mpv imv lmms\
     btop \
     yt-dlp \
     nano wget curl psmisc rsync\
     Thunar yazi ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg ImageMagick glow \
 
-curl -f https://zed.dev/install.sh | sh
 curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
-flatpak install -y flathub md.obsidian.Obsidian
-flatpak install -y foliate
-flatpak install -y flathub org.audacityteam.Audacity
-
+flatpak install -y flathub md.obsidian.Obsidian com.github.johnfactotum.Foliate org.audacityteam.Audacity com.spotify.Client
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -258,14 +254,23 @@ fc-cache -fv
 #  Firefox: set media.ffmpeg.vaapi.enabled=true in about:config
 
 xi -Sy \
-    speedtest-cli \
-    git github-cli base-devel \
-    python3 python3-pip \
-    nodejs \
-    pkg-config \
-    libva libva-utils intel-media-driver libva-intel-driver mesa-vulkan-intel vulkan-loader \
+    xtools base-devel pkg-config \
+    git github-cli lazygit \
+    clang llvm cmake ninja meson gdb lldb strace \
+    python3 python3-pip python3-devel python3-virtualenv uv \
+    nodejs pnpm \
+    rustup go \
+    curl wget jq yq \
+    ripgrep fd fzf bat eza btop \
+    file tree unzip zip rsync direnv tmux neovim \
+    sqlite openssl \
+    bind-utils \
+    intel-video-accel libva-utils vulkan-loader mesa-vulkan-intel \
     docker docker-compose \
-    opencode
+    speedtest-cli
+
+curl -f https://zed.dev/install.sh | sh
+curl -fsSL https://opencode.ai/install | bash
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -392,11 +397,24 @@ cp .misc/* ~
 xr -OOo && sudo vkpurge rm all
 
 
+printf '\n\e[1;34m────────────────────────────────────────────────────\e[0m\n'
+printf '\e[1;34m  Git Configuration\e[0m\n'
+printf '\e[1;34m────────────────────────────────────────────────────\e[0m\n\n'
+
+read -rp "Enter Git Email: " git_email
+read -rp "Enter Git Username: " git_user
+
+if [ -n "$git_email" ]; then
+    git config --global user.email "$git_email"
+    echo "--> Git email set to: $git_email"
+fi
+
+if [ -n "$git_user" ]; then
+    git config --global user.name "$git_user"
+    echo "--> Git username set to: $git_user"
+fi
+
 printf '\n\e[1;32m────────────────────────────────────────────────────\e[0m\n'
 printf '\e[1;32m  Setup complete.\e[0m\n'
 printf '\e[1;32m────────────────────────────────────────────────────\e[0m\n\n'
-printf '  Boot: POST → (Shift for Windows) → tty1 → Password: → niri\n\n'
-echo
-read -p "Setup Process Complete.
-Press any key to reboot system"
 sudo reboot
