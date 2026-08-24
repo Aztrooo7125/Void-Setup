@@ -24,13 +24,13 @@ echo "Void Linux Setup — User: $VOID_USER"
 # (I.)  REPOS & INITIAL UPDATE
 # ─────────────────────────────────────────────────────────────────────────────
 
+sudo -v
+
 xi -Sy void-repo-nonfree void-repo-multilib void-repo-multilib-nonfree
 xi -Syu
 
-xi -fy dbus
-sudo rm -f /var/service/dbus
-sudo ln -sf /etc/sv/dbus /var/service/
-sudo sv up dbus
+xi -Sy dbus
+sudo ln -sf /etc/sv/dbus /var/service/ && sudo sv up dbus 2>/dev/null || true
 
 xi -Sy flatpak
 sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -99,9 +99,6 @@ sudo grub-mkconfig -o /boot/grub/grub.cfg
 # ─────────────────────────────────────────────────────────────────────────────
 # (IV.)  CORE SERVICES
 # ─────────────────────────────────────────────────────────────────────────────
-
-xi -Sy dbus
-sudo ln -sf /etc/sv/dbus /var/service/ && sudo sv up dbus 2>/dev/null || true
 
 xi -Sy elogind
 sudo ln -sf /etc/sv/elogind /var/service/ && sudo sv up elogind 2>/dev/null || true
@@ -200,8 +197,10 @@ sudo flatpak install -y flathub md.obsidian.Obsidian com.github.johnfactotum.Fol
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# (X.) COMPLETE FONT SUITE (System, CJK, Symbols, Microsoft & Apple)
+# (X.) COMPLETE FONT SUITE (System, CJK, Symbols, Adobe, Microsoft & Apple)
 # ─────────────────────────────────────────────────────────────────────────────
+
+xi -Syu
 
 # 1. Official Void Linux Packages (Noto, CJK, Emoji, Icons, Standards)
 xi -Sy \
@@ -213,17 +212,31 @@ xi -Sy \
     liberation-fonts-ttf \
     font-awesome \
     nerd-fonts-symbols-ttf \
-    font-adobe-source-code-pro-ttf \
-    font-adobe-source-sans-pro-ttf \
-    font-adobe-source-serif-pro-ttf \
     cantarell-fonts \
     cabextract curl unzip
 
 # Create organized font directories
 FONT_DIR="$HOME/.local/share/fonts"
-mkdir -p "$FONT_DIR"/{JetBrainsMono,NerdSymbols,Microsoft,Apple}
+mkdir -p "$FONT_DIR"/{JetBrainsMono,NerdSymbols,Adobe,Microsoft,Apple}
 
-# 2. JetBrains Mono + Symbols Only Nerd Font (Complete Icon Fallback)
+# 2. Adobe Source Fonts (Manual Installation via Official Repos)
+echo "--> Installing Adobe Source Suite (Source Code Pro, Source Sans, Source Serif)..."
+wget -q --show-progress -O /tmp/source-code-pro.zip \
+    "https://github.com/adobe-fonts/source-code-pro/archive/refs/heads/release.zip"
+unzip -o -j /tmp/source-code-pro.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
+rm -f /tmp/source-code-pro.zip
+
+wget -q --show-progress -O /tmp/source-sans.zip \
+    "https://github.com/adobe-fonts/source-sans/archive/refs/heads/release.zip"
+unzip -o -j /tmp/source-sans.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
+rm -f /tmp/source-sans.zip
+
+wget -q --show-progress -O /tmp/source-serif.zip \
+    "https://github.com/adobe-fonts/source-serif/archive/refs/heads/release.zip"
+unzip -o -j /tmp/source-serif.zip "*.ttf" "*.otf" -d "$FONT_DIR/Adobe"
+rm -f /tmp/source-serif.zip
+
+# 3. JetBrains Mono + Symbols Only Nerd Font (Complete Icon Fallback)
 echo "--> Installing JetBrains Mono & Symbols Nerd Font..."
 wget -q --show-progress -O /tmp/JBM.zip \
     "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
@@ -235,23 +248,24 @@ wget -q --show-progress -O /tmp/NerdSymbols.zip \
 unzip -o /tmp/NerdSymbols.zip -d "$FONT_DIR/NerdSymbols" '*.ttf'
 rm -f /tmp/NerdSymbols.zip
 
-# 3. Microsoft Fonts (Core Web Fonts + ClearType + Segoe UI)
+# 4. Microsoft Fonts (Core Web Fonts + ClearType + Segoe UI)
 echo "--> Installing Microsoft Fonts (Calibri, Segoe UI, Arial, Times, etc.)..."
 wget -q --show-progress -O /tmp/ms-fonts.zip \
     "https://github.com/pjobson/Microsoft-Fonts/archive/refs/heads/master.zip"
 unzip -o -j /tmp/ms-fonts.zip "*.ttf" "*.TTF" "*.otf" "*.OTF" -d "$FONT_DIR/Microsoft"
 rm -f /tmp/ms-fonts.zip
 
-# 4. Apple Fonts (San Francisco Pro/Mono/Compact & New York)
+# 5. Apple Fonts (San Francisco Pro/Mono/Compact & New York)
 echo "--> Installing Apple Typography Suite (SF Pro, SF Mono, New York)..."
 wget -q --show-progress -O /tmp/apple-fonts.zip \
     "https://github.com/dpejoh/apple-typography-for-linux/archive/refs/heads/main.zip"
 unzip -o -j /tmp/apple-fonts.zip "*.ttf" "*.otf" -d "$FONT_DIR/Apple"
 rm -f /tmp/apple-fonts.zip
 
-# 5. Rebuild Font Cache
+# 6. Rebuild Font Cache
 echo "--> Rebuilding Font Cache..."
 fc-cache -fv
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # (XI.)  DEV TOOLS + VA-API                                        ← [UHD620]
