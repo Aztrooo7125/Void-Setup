@@ -163,7 +163,7 @@ sudo ln -sf /etc/sv/wireplumber /var/service/
 xi -Sy \
     libreoffice \
     firefox \
-    mpv imv lmms\
+    mpv imv \
     btop \
     yt-dlp \
     nano wget curl psmisc rsync\
